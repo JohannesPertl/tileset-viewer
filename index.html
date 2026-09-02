@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#111714" />
-    <meta name="description" content="Import tilesets, inspect their tiles, tag coordinates, and test combinations on a temporary grid." />
+    <meta name="theme-color" content="#f4f4ef" />
+    <meta name="description" content="Import tilesets, select tiles, tag them, and arrange a temporary level." />
     <title>Tiletag</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -12,156 +12,121 @@
     <header class="topbar">
       <a class="brand" href="#" aria-label="Tiletag home">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
-        <span><strong>Tiletag</strong><small>tileset workbench</small></span>
+        <strong>Tiletag</strong>
       </a>
       <div class="topbar-actions">
-        <button class="button button-ghost" id="importTagsButton" type="button">Import tags</button>
-        <button class="button button-primary" id="addTilesetsButton" type="button">Add tilesets</button>
-        <button class="button button-accent" id="exportTagsButton" type="button" disabled>Export tags</button>
+        <button class="button button-quiet" id="importTagsButton" type="button">Import JSON</button>
+        <button class="button button-dark" id="addTilesetsButton" type="button">Add tilesets</button>
+        <button class="button button-accent" id="exportTagsButton" type="button" disabled>Export</button>
       </div>
     </header>
 
-    <main class="workspace">
-      <section class="library panel" aria-label="Tile library">
-        <div class="panel-heading">
-          <div><p class="eyebrow">Source images</p><h1>Tile library</h1></div>
-          <span class="count-badge" id="sheetCount">0</span>
+    <main class="workspace" id="workspace" data-mobile-view="library">
+      <section class="library panel" aria-label="Tiles">
+        <div class="section-heading">
+          <div><span class="eyebrow">Library</span><h1>Tiles</h1></div>
+          <span class="count-badge" id="sheetCount">0 sets</span>
         </div>
 
         <label class="dropzone" id="dropzone" for="fileInput">
-          <strong>Drop or choose tilesets</strong>
-          <span>PNG, JPG, WebP or GIF; multiple files are supported</span>
+          <strong>Drop tilesets here</strong>
+          <span>or tap to choose multiple images</span>
         </label>
 
-        <div class="library-options">
-          <label class="compact-field" for="defaultTileSize">
-            <span>Default tile size</span>
-            <span class="number-input">
-              <input id="defaultTileSize" type="number" min="1" max="2048" inputmode="numeric" value="32" />
-              <span>px</span>
-            </span>
+        <div class="library-toolbar">
+          <label class="field-inline">
+            <span>Tile</span>
+            <span class="number-input"><input id="defaultTileSize" type="number" min="1" max="2048" inputmode="numeric" value="32" /><span>px</span></span>
           </label>
-          <label class="compact-field" for="paletteZoom">
-            <span>Preview size</span>
-            <input id="paletteZoom" type="range" min="48" max="128" step="8" value="80" />
+          <label class="search-field">
+            <span class="sr-only">Search tiles</span>
+            <input id="searchInput" type="search" placeholder="Search tags or coordinates" />
+          </label>
+          <label class="preview-control" title="Preview size">
+            <span class="sr-only">Preview size</span>
+            <input id="paletteZoom" type="range" min="48" max="112" step="8" value="72" />
           </label>
         </div>
 
-        <div class="sheet-list" id="sheetList" aria-label="Imported tilesets"></div>
-
-        <div class="empty-library" id="emptyLibrary">
-          <strong>No tilesets loaded</strong>
-          <p>Import one or more spritesheets. Each grid cell will appear here as a separate tile.</p>
+        <div class="empty-state" id="emptyLibrary">
+          <span class="empty-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <strong>Add your tilesets</strong>
+          <p>Each image is split into selectable tiles using the size above.</p>
+          <button class="button button-dark" id="emptyAddButton" type="button">Choose images</button>
         </div>
 
-        <div class="active-library" id="activeLibrary" hidden>
-          <div class="sheet-controls">
-            <label>
-              <span>Tileset name</span>
-              <input id="sheetNameInput" maxlength="80" />
-            </label>
-            <label class="tile-size-field">
-              <span>Tile size</span>
-              <span class="number-input">
-                <input id="activeTileSize" type="number" min="1" max="2048" inputmode="numeric" />
-                <span>px</span>
-              </span>
-            </label>
-            <button class="button button-ghost" id="applyTileSizeButton" type="button">Apply</button>
-            <button class="button button-danger" id="removeSheetButton" type="button">Remove</button>
-          </div>
-
-          <div class="palette-heading">
-            <div>
-              <strong id="sheetMeta"></strong>
-              <span>Coordinates are zero-based from the top-left.</span>
-            </div>
-            <label class="search-field">
-              <span class="sr-only">Search tiles</span>
-              <input id="searchInput" type="search" placeholder="Search tag, # or x,y" />
-            </label>
-          </div>
-
-          <div class="tile-palette" id="tilePalette"></div>
-          <div class="no-results" id="noResults" hidden>No matching tiles.</div>
-        </div>
+        <div class="tileset-list" id="tilesetList"></div>
       </section>
 
-      <section class="editor panel" aria-label="Temporary level editor">
+      <section class="editor panel" id="editor" aria-label="Temporary level grid">
         <div class="editor-heading">
-          <div><p class="eyebrow">Temporary workspace</p><h2>Test grid</h2></div>
-          <div class="brush-status" id="brushStatus">Select a tile to paint</div>
+          <div><span class="eyebrow">Temporary level</span><h2>Grid</h2></div>
+          <div class="brush-status" id="brushStatus">Choose a tile</div>
         </div>
 
         <div class="editor-toolbar">
-          <div class="tool-group" aria-label="Editor tool">
+          <div class="segmented" aria-label="Grid tool">
             <button class="tool-button is-active" id="paintToolButton" type="button">Paint</button>
             <button class="tool-button" id="eraseToolButton" type="button">Erase</button>
           </div>
-
-          <div class="grid-size-control">
-            <label><span class="sr-only">Grid columns</span><input id="gridColumns" type="number" min="4" max="200" value="32" inputmode="numeric" /></label>
+          <div class="grid-size">
+            <input id="gridColumns" type="number" min="2" max="200" value="12" inputmode="numeric" aria-label="Grid columns" />
             <span>×</span>
-            <label><span class="sr-only">Grid rows</span><input id="gridRows" type="number" min="4" max="200" value="18" inputmode="numeric" /></label>
-            <button class="toolbar-button" id="applyGridSizeButton" type="button">Resize</button>
+            <input id="gridRows" type="number" min="2" max="200" value="10" inputmode="numeric" aria-label="Grid rows" />
+            <button class="small-button" id="applyGridSizeButton" type="button">Resize</button>
           </div>
-
-          <div class="zoom-buttons" aria-label="Grid zoom">
-            <button class="toolbar-button square-button" id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
+          <div class="zoom-controls">
+            <button class="icon-button" id="zoomOutButton" type="button" aria-label="Zoom out">−</button>
             <output id="editorZoom">100%</output>
-            <button class="toolbar-button square-button" id="zoomInButton" type="button" aria-label="Zoom in">+</button>
-            <button class="toolbar-button" id="fitGridButton" type="button">Fit</button>
+            <button class="icon-button" id="zoomInButton" type="button" aria-label="Zoom in">+</button>
+            <button class="small-button" id="fitGridButton" type="button">Fit</button>
           </div>
-
-          <button class="toolbar-button danger-link" id="clearGridButton" type="button">Clear</button>
+          <button class="small-button danger" id="clearGridButton" type="button">Clear</button>
         </div>
 
-        <div class="canvas-viewport" id="canvasViewport" tabindex="0" aria-label="Placement grid">
-          <canvas id="mapCanvas"></canvas>
-          <div class="canvas-help" id="canvasHelp">
-            <strong>Select a tile from the library</strong>
-            <span>Then tap a cell to place it.</span>
+        <div class="canvas-viewport" id="canvasViewport" tabindex="0">
+          <canvas id="mapCanvas" aria-label="Tile placement grid"></canvas>
+          <div class="canvas-empty" id="canvasHelp">
+            <strong>Select a tile first</strong>
+            <span>Open Tiles, then tap a tile.</span>
           </div>
         </div>
 
-        <div class="editor-hint">
-          <span>Tap to place</span><span>Drag to pan</span><span>Pinch or scroll to zoom</span><span>Right-click to erase</span>
+        <div class="editor-footer">
+          <span>Tap to place</span><span>Drag to pan</span><span>Pinch or scroll to zoom</span>
         </div>
       </section>
 
       <aside class="tags panel" aria-label="Tile tags">
-        <div class="panel-heading">
-          <div><p class="eyebrow">Export metadata</p><h2>Tile tags</h2></div>
+        <div class="section-heading">
+          <div><span class="eyebrow">Selected tile</span><h2>Tags</h2></div>
         </div>
-
         <div class="tag-empty" id="tagEmpty">
           <strong>No tile selected</strong>
-          <p>Select a tile in the library to describe what that coordinate is for.</p>
+          <p>Select any tile to tag it or use it on the grid.</p>
         </div>
-
         <div class="tag-editor" id="tagEditor" hidden>
           <div class="selected-tile">
-            <canvas id="selectedTileCanvas" width="88" height="88"></canvas>
-            <div>
-              <strong id="selectedTileLabel"></strong>
-              <span id="selectedTilePixels"></span>
-            </div>
+            <canvas id="selectedTileCanvas"></canvas>
+            <div><strong id="selectedTileLabel"></strong><span id="selectedTilePixels"></span></div>
           </div>
-
-          <label class="tag-input-label" for="tagInput">Add tags</label>
+          <label class="tag-label" for="tagInput">Add tags</label>
           <div class="tag-input-row">
-            <input id="tagInput" type="text" placeholder="corner, platform, left edge" maxlength="120" enterkeyhint="done" />
-            <button class="button button-primary" id="addTagButton" type="button">Add</button>
+            <input id="tagInput" type="text" placeholder="water, wall, corner" maxlength="120" enterkeyhint="done" />
+            <button class="button button-dark" id="addTagButton" type="button">Add</button>
           </div>
-          <small class="field-help">Separate several tags with commas.</small>
-
-          <div class="tag-list-heading">
-            <span>Applied tags</span><span id="tagCount">0</span>
-          </div>
+          <small>Separate tags with commas.</small>
+          <div class="tag-list-heading"><span>Applied</span><span id="tagCount">0</span></div>
           <div class="tag-list" id="tagList"></div>
         </div>
       </aside>
     </main>
+
+    <nav class="mobile-nav" aria-label="App views">
+      <button class="is-active" type="button" data-mobile-target="library"><span class="nav-icon tiles-icon" aria-hidden="true"></span><span>Tiles</span></button>
+      <button type="button" data-mobile-target="editor"><span class="nav-icon grid-icon" aria-hidden="true"></span><span>Grid</span></button>
+      <button type="button" data-mobile-target="tags"><span class="nav-icon tag-icon" aria-hidden="true"></span><span>Tags</span></button>
+    </nav>
 
     <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
     <input id="tagFileInput" type="file" accept="application/json,.json" hidden />

@@ -29,12 +29,12 @@ No build command or backend is required.
 2. Select a tile in the library, then tap cells in the test grid to place it.
 3. Drag the grid to pan. Pinch, scroll, or use the zoom controls to zoom.
 4. Add tags such as `corner`, `left edge`, or `platform` to selected library tiles.
-5. Export the active tileset's tag JSON.
+5. Export all imported tilesets and their tags as JSON.
 
 The test grid is deliberately temporary and is never exported. Its only purpose is checking how tiles from one or more tilesets work together.
 
 ## Tag exports
 
-Images are processed locally and never uploaded. An export describes only the active tileset and its tagged, zero-based `(x, y)` tile coordinates. It does not embed image pixels or the temporary test layout. Import the original source image alongside a tag export to restore its annotations.
+Images are processed locally and never uploaded. An export describes all imported tilesets and their tagged, zero-based `(x, y)` tile coordinates. It does not embed image pixels or the temporary test layout. Import the original source images alongside a tag export to restore their annotations.
 
 Older `tiletag-project` JSON files can still be imported so existing annotations are not lost.
