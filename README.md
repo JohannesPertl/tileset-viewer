@@ -1,6 +1,6 @@
 # Tiletag
 
-A dependency-free, static tileset viewer and tag editor. Import multiple image files, split them into a configurable grid, tag individual or grouped tiles, search annotations, and export the project as JSON.
+A dependency-free tileset workbench. Import multiple spritesheets, inspect every tile as a separate image, tag tile coordinates, and combine tiles from different sheets on a temporary level-editor grid.
 
 **Live app:** <https://johannespertl.github.io/tileset-viewer/>
 
@@ -23,6 +23,18 @@ Then open <http://localhost:8080>.
 
 No build command or backend is required.
 
-## Data and exports
+## Use it
 
-Tileset images are processed locally and never uploaded. The exported JSON contains tileset metadata, grid coordinates, and tags; it intentionally does not embed image pixels. When importing a project JSON, import the original source images to reconnect the annotations.
+1. Import one or more spritesheets and set the tile size for each sheet.
+2. Select a tile in the library, then tap cells in the test grid to place it.
+3. Drag the grid to pan. Pinch, scroll, or use the zoom controls to zoom.
+4. Add tags such as `corner`, `left edge`, or `platform` to selected library tiles.
+5. Export the active tileset's tag JSON.
+
+The test grid is deliberately temporary and is never exported. Its only purpose is checking how tiles from one or more tilesets work together.
+
+## Tag exports
+
+Images are processed locally and never uploaded. An export describes only the active tileset and its tagged, zero-based `(x, y)` tile coordinates. It does not embed image pixels or the temporary test layout. Import the original source image alongside a tag export to restore its annotations.
+
+Older `tiletag-project` JSON files can still be imported so existing annotations are not lost.
