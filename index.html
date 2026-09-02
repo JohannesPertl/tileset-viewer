@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f2ea" />
+    <meta
+      name="description"
+      content="A private, browser-based tileset viewer and tag editor."
+    />
+    <title>Tiletag — tileset viewer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Tiletag home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </span>
+        <span>
+          <strong>Tiletag</strong>
+          <small>tileset viewer</small>
+        </span>
+      </a>
+
+      <div class="topbar-actions">
+        <span class="privacy-note">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10V7a4 4 0 0 1 8 0v3m-9 0h10a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"/></svg>
+          Stays on your device
+        </span>
+        <button class="button button-ghost" id="importProjectButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 18v2h14v-2"/></svg>
+          Import JSON
+        </button>
+        <button class="button button-primary" id="exportButton" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 14v6h14v-6"/></svg>
+          Export JSON
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar panel" aria-label="Tilesets">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Workspace</p>
+            <h2>Tilesets</h2>
+          </div>
+          <span class="count-badge" id="sheetCount">0</span>
+        </div>
+
+        <label class="dropzone" id="dropzone" for="fileInput">
+          <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
+          <span class="dropzone-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5m0 0L8 9m4-4 4 4M5 14v5h14v-5"/></svg>
+          </span>
+          <strong>Drop tilesets here</strong>
+          <span>or tap to browse PNG, JPG, WebP</span>
+        </label>
+
+        <div class="field compact-field">
+          <label for="defaultTileSize">Default tile size</label>
+          <div class="number-input">
+            <input id="defaultTileSize" type="number" min="1" max="1024" inputmode="numeric" value="32" />
+            <span>px</span>
+          </div>
+        </div>
+
+        <div class="sheet-list" id="sheetList"></div>
+
+        <button class="demo-button" id="demoButton" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.2 4.2L17 9l-3.8 1.8L12 15l-1.2-4.2L7 9l3.8-1.8L12 3Zm6 11 .7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7L18 14Z"/></svg>
+          Try the demo tileset
+        </button>
+      </aside>
+
+      <section class="canvas-panel panel" aria-live="polite">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-illustration" aria-hidden="true">
+            <span class="pixel-tree"></span>
+            <span class="pixel-grass pixel-grass-one"></span>
+            <span class="pixel-grass pixel-grass-two"></span>
+            <span class="pixel-water"></span>
+          </div>
+          <p class="eyebrow">Start a new atlas</p>
+          <h1>Turn spritesheets into<br />searchable tile libraries.</h1>
+          <p>
+            Import one or more tilesets, select tiles, and add your own tags.
+            Your images never leave this browser.
+          </p>
+          <div class="empty-actions">
+            <button class="button button-primary" id="emptyImportButton" type="button">
+              Import tilesets
+            </button>
+            <button class="button button-ghost" id="emptyDemoButton" type="button">View demo</button>
+          </div>
+        </div>
+
+        <div id="tilesView" class="tiles-view" hidden>
+          <div class="canvas-toolbar">
+            <div class="title-group">
+              <input class="sheet-name-input" id="sheetNameInput" aria-label="Tileset name" maxlength="80" />
+              <div class="meta-row" id="sheetMeta"></div>
+            </div>
+
+            <div class="toolbar-controls">
+              <label class="search-field">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+                <input id="searchInput" type="search" placeholder="Search tags or #" aria-label="Search tiles" />
+              </label>
+              <label class="zoom-control" title="Tile preview size">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5m13 5h5v-5"/></svg>
+                <input id="zoomInput" type="range" min="52" max="112" value="72" aria-label="Tile preview size" />
+              </label>
+            </div>
+          </div>
+
+          <div class="selection-bar" id="selectionBar" hidden>
+            <strong id="selectionCount">0 tiles selected</strong>
+            <button class="text-button" id="selectVisibleButton" type="button">Select visible</button>
+            <button class="text-button" id="clearSelectionButton" type="button">Clear</button>
+          </div>
+
+          <div class="filter-row" id="filterRow"></div>
+          <div class="tile-grid-wrap">
+            <div class="tile-grid" id="tileGrid"></div>
+            <div class="no-results" id="noResults" hidden>
+              <strong>No matching tiles</strong>
+              <span>Try a different tag or search.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="inspector panel" id="inspector" aria-label="Tag editor">
+        <div class="panel-heading inspector-heading">
+          <div>
+            <p class="eyebrow">Inspector</p>
+            <h2>Tile tags</h2>
+          </div>
+          <button class="icon-button danger-button" id="removeSheetButton" type="button" title="Remove tileset" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5"/></svg>
+            <span class="sr-only">Remove tileset</span>
+          </button>
+        </div>
+
+        <div class="inspector-content" id="inspectorContent">
+          <div class="inspector-empty">
+            <span class="cursor-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 3 12 8-6 1 3 6-3 2-3-6-4 4 1-15Z"/></svg>
+            </span>
+            <strong>Select some tiles</strong>
+            <p>Tap individual tiles or select all visible tiles, then tag them together.</p>
+          </div>
+        </div>
+
+        <div class="inspector-editor" id="inspectorEditor" hidden>
+          <div class="selected-summary">
+            <div class="selection-stack" id="selectionStack"></div>
+            <div>
+              <strong id="inspectorSelectionCount">1 tile selected</strong>
+              <span>Changes apply to the full selection.</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="tagInput">Add a custom tag</label>
+            <div class="tag-input-row">
+              <input id="tagInput" type="text" placeholder="e.g. mossy, animated" maxlength="40" enterkeyhint="done" />
+              <button class="button button-dark" id="addTagButton" type="button">Add</button>
+            </div>
+            <small>Separate multiple tags with commas.</small>
+          </div>
+
+          <div class="tag-section">
+            <div class="section-label">
+              <span>Applied tags</span>
+              <span id="appliedTagCount">0</span>
+            </div>
+            <div class="tag-cloud" id="appliedTags"></div>
+          </div>
+
+          <div class="tag-section">
+            <div class="section-label"><span>Quick tags</span></div>
+            <div class="tag-cloud quick-tags" id="quickTags"></div>
+          </div>
+
+          <div class="danger-zone">
+            <button class="text-button danger-text" id="clearTagsButton" type="button">Clear tags from selection</button>
+          </div>
+        </div>
+
+        <div class="sheet-settings" id="sheetSettings" hidden>
+          <div class="section-label"><span>Tileset grid</span></div>
+          <div class="settings-row">
+            <div class="number-input">
+              <input id="activeTileSize" type="number" min="1" max="1024" inputmode="numeric" aria-label="Active tileset tile size" />
+              <span>px</span>
+            </div>
+            <button class="button button-ghost" id="applyTileSizeButton" type="button">Apply</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      <span>Tiletag works entirely offline after loading.</span>
+      <span>JSON exports annotations, coordinates, and tileset metadata.</span>
+    </footer>
+
+    <input id="projectInput" type="file" accept="application/json,.json" hidden />
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
