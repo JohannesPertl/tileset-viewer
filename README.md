@@ -2,6 +2,8 @@
 
 A dependency-free, static tileset viewer and tag editor. Import multiple image files, split them into a configurable grid, tag individual or grouped tiles, search annotations, and export the project as JSON.
 
+**Live app:** <https://johannespertl.github.io/tileset-viewer/>
+
 ## Run locally
 
 Open `index.html` directly, or serve the directory with any static server:
