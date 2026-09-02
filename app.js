@@ -211,15 +211,11 @@ async function addFiles(fileList) {
   if (imported) showToast(`${imported} tileset${imported === 1 ? "" : "s"} added`);
 }
 
-function visibleTiles(sheet) {
-  const query = state.query.trim().toLocaleLowerCase();
-  if (!query || sheet.name.toLocaleLowerCase().includes(query)) return sheet.tiles;
+function tileMatchesQuery(tile, query) {
   const compact = query.replace(/[()\s]/g, "");
-  return sheet.tiles.filter((tile) =>
-    String(tile.index).includes(query.replace(/^#/, "")) ||
+  return String(tile.index).includes(query.replace(/^#/, "")) ||
     `${tile.column},${tile.row}`.includes(compact) ||
-    tile.tags.some((tag) => tag.includes(query)),
-  );
+    tile.tags.some((tag) => tag.includes(query));
 }
 
 function renderLibrary() {
@@ -227,14 +223,18 @@ function renderLibrary() {
   elements.sheetCount.textContent = sheetLabel;
   elements.emptyLibrary.hidden = state.sheets.length > 0;
   elements.exportTagsButton.disabled = state.sheets.length === 0;
+  const query = state.query.trim().toLocaleLowerCase();
 
   elements.tilesetList.innerHTML = state.sheets.map((sheet) => {
-    const tiles = visibleTiles(sheet);
+    const filtering = Boolean(query) && !sheet.name.toLocaleLowerCase().includes(query);
+    const matchCount = filtering ? sheet.tiles.filter((tile) => tileMatchesQuery(tile, query)).length : sheet.tiles.length;
     const tagged = sheet.tiles.filter((tile) => tile.tags.length).length;
-    const tileMarkup = tiles.map((tile) => {
+    // Tiles keep the sheet's row-major order and column count so the palette mirrors the source image layout.
+    const tileMarkup = sheet.tiles.map((tile) => {
       const selected = state.brush?.sheetId === sheet.id && state.brush.tileIndex === tile.index;
+      const dimmed = filtering && !tileMatchesQuery(tile, query);
       return `
-        <button class="tile-card ${selected ? "is-selected" : ""}" type="button" data-select-sheet="${sheet.id}" data-select-tile="${tile.index}" aria-pressed="${selected}">
+        <button class="tile-card ${selected ? "is-selected" : ""} ${dimmed ? "is-dimmed" : ""}" type="button" data-select-sheet="${sheet.id}" data-select-tile="${tile.index}" aria-pressed="${selected}" ${dimmed ? "disabled" : ""}>
           <canvas class="tile-art" width="${sheet.tileSize}" height="${sheet.tileSize}" data-preview-sheet="${sheet.id}" data-preview-tile="${tile.index}"></canvas>
           <span class="tile-label"><span>${tile.column},${tile.row}</span><span>${tile.tags.length ? escapeHtml(tile.tags.join(" · ")) : `#${tile.index}`}</span></span>
         </button>
@@ -254,8 +254,8 @@ function renderLibrary() {
           <button class="sheet-action apply" type="button" data-sheet-action="apply" data-sheet-id="${sheet.id}">Apply</button>
           <button class="sheet-action remove" type="button" data-sheet-action="remove" data-sheet-id="${sheet.id}" aria-label="Remove ${escapeAttribute(sheet.name)}">×</button>
         </div>
-        <div class="tile-palette" style="--tile-preview:${state.previewSize}px">${tileMarkup}</div>
-        ${tiles.length ? "" : '<div class="tileset-empty">No matching tiles</div>'}
+        <div class="tile-palette" style="--tile-preview:${state.previewSize}px;--sheet-columns:${sheet.columns}">${tileMarkup}</div>
+        ${matchCount ? "" : '<div class="tileset-empty">No matching tiles</div>'}
       </section>
     `;
   }).join("");

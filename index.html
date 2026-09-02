@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f4f4ef" />
     <meta name="description" content="Import tilesets, select tiles, tag them, and arrange a temporary level." />
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
     <title>Tiletag</title>
-    <link rel="stylesheet" href="styles.css" />
+    <!-- Bump this version on every deploy that changes app.js or styles.css, so GitHub Pages'
+         CDN and browsers fetch the new files instead of serving a stale cached copy. -->
+    <link rel="stylesheet" href="styles.css?v=1" />
   </head>
   <body>
     <header class="topbar">
@@ -131,6 +134,6 @@
     <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden />
     <input id="tagFileInput" type="file" accept="application/json,.json" hidden />
     <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
-    <script src="app.js"></script>
+    <script src="app.js?v=1"></script>
   </body>
 </html>
