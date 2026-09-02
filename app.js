@@ -1,6 +1,7 @@
 const BASE_CELL_SIZE = 48;
 const MIN_ZOOM = 0.12;
 const MAX_ZOOM = 8;
+const GRID_GROWTH_LIMIT = 100000;
 
 const state = {
   sheets: [],
@@ -603,15 +604,24 @@ function drawEditor() {
     context.stroke();
   }
 
+  context.restore();
+
   if (state.hoverCell) {
     const { column, row } = state.hoverCell;
-    context.fillStyle = state.tool === "erase" ? "rgba(255,90,82,.25)" : "rgba(217,245,101,.23)";
-    context.fillRect(state.view.x + column * cellSize, state.view.y + row * cellSize, cellSize, cellSize);
-    context.strokeStyle = state.tool === "erase" ? "#ff746d" : "#d9f565";
-    context.lineWidth = 2;
-    context.strokeRect(state.view.x + column * cellSize + 1, state.view.y + row * cellSize + 1, Math.max(0, cellSize - 2), Math.max(0, cellSize - 2));
+    const withinBounds = column >= 0 && row >= 0 && column < state.level.columns && row < state.level.rows;
+    const isErase = state.tool === "erase";
+    if (withinBounds || !isErase) {
+      const cellX = state.view.x + column * cellSize;
+      const cellY = state.view.y + row * cellSize;
+      context.fillStyle = isErase ? "rgba(255,90,82,.25)" : "rgba(217,245,101,.23)";
+      if (withinBounds) context.fillRect(cellX, cellY, cellSize, cellSize);
+      context.strokeStyle = isErase ? "#ff746d" : "#d9f565";
+      context.lineWidth = 2;
+      if (!withinBounds) context.setLineDash([4, 3]);
+      context.strokeRect(cellX + 1, cellY + 1, Math.max(0, cellSize - 2), Math.max(0, cellSize - 2));
+      if (!withinBounds) context.setLineDash([]);
+    }
   }
-  context.restore();
 
   context.strokeStyle = "rgba(255,255,255,.4)";
   context.lineWidth = 1;
@@ -620,26 +630,67 @@ function drawEditor() {
 
 function screenToCell(x, y) {
   const cellSize = BASE_CELL_SIZE * state.view.zoom;
-  const column = Math.floor((x - state.view.x) / cellSize);
-  const row = Math.floor((y - state.view.y) / cellSize);
-  if (column < 0 || row < 0 || column >= state.level.columns || row >= state.level.rows) return null;
-  return { column, row };
+  return {
+    column: Math.floor((x - state.view.x) / cellSize),
+    row: Math.floor((y - state.view.y) / cellSize),
+  };
+}
+
+function growGridIfNeeded(column, row) {
+  const level = state.level;
+  const shiftX = column < 0 ? -column : 0;
+  const shiftY = row < 0 ? -row : 0;
+  const columns = Math.max(level.columns + shiftX, column + shiftX + 1);
+  const rows = Math.max(level.rows + shiftY, row + shiftY + 1);
+  if (columns > GRID_GROWTH_LIMIT || rows > GRID_GROWTH_LIMIT) return null;
+
+  if (shiftX || shiftY) {
+    const shifted = new Map();
+    level.placements.forEach((placement, key) => {
+      const [placedColumn, placedRow] = key.split(",").map(Number);
+      shifted.set(`${placedColumn + shiftX},${placedRow + shiftY}`, placement);
+    });
+    level.placements = shifted;
+    const cellSize = BASE_CELL_SIZE * state.view.zoom;
+    state.view.x -= shiftX * cellSize;
+    state.view.y -= shiftY * cellSize;
+  }
+
+  level.columns = columns;
+  level.rows = rows;
+  elements.gridColumns.value = columns;
+  elements.gridRows.value = rows;
+  return { column: column + shiftX, row: row + shiftY };
 }
 
 function interactWithCell(x, y, forceErase = false) {
   const cell = screenToCell(x, y);
-  if (!cell) return;
-  const key = `${cell.column},${cell.row}`;
+
   if (forceErase || state.tool === "erase") {
+    const withinBounds = cell.column >= 0 && cell.row >= 0 && cell.column < state.level.columns && cell.row < state.level.rows;
+    if (withinBounds) state.level.placements.delete(`${cell.column},${cell.row}`);
+    drawEditor();
+    return;
+  }
+
+  const selection = selectedTile();
+  if (!selection) {
+    showToast("Choose a tile first");
+    return;
+  }
+  const grown = growGridIfNeeded(cell.column, cell.row);
+  if (!grown) {
+    showToast("Grid can’t grow any further");
+    return;
+  }
+  const key = `${grown.column},${grown.row}`;
+  const existing = state.level.placements.get(key);
+  if (existing && existing.sheetId === selection.sheet.id && existing.tileIndex === selection.tile.index) {
     state.level.placements.delete(key);
   } else {
-    const selection = selectedTile();
-    if (!selection) {
-      showToast("Choose a tile first");
-      return;
-    }
     state.level.placements.set(key, { sheetId: selection.sheet.id, tileIndex: selection.tile.index });
   }
+  state.hoverCell = grown;
   drawEditor();
 }
 

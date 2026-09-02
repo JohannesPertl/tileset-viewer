@@ -26,7 +26,7 @@ No build command or backend is required.
 ## Use it
 
 1. Import one or more spritesheets and set the tile size for each sheet.
-2. Select a tile in the library, then tap cells in the test grid to place it.
+2. Select a tile in the library, then tap cells in the test grid to place it. Tapping a cell that already holds that same tile removes it, and the grid grows automatically as you place tiles past its edges.
 3. Drag the grid to pan. Pinch, scroll, or use the zoom controls to zoom.
 4. Add tags such as `corner`, `left edge`, or `platform` to selected library tiles.
 5. Export all imported tilesets and their tags as JSON.
